@@ -1,46 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatManager } from './utils/ChatManager';
-import { Send, Plus, Copy, MessageSquare, Edit2, Check, AlertTriangle } from 'lucide-react';
+import { Send, Plus, Copy, MessageSquare, Edit2, Check } from 'lucide-react';
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center h-screen bg-[#313338] text-[#dbdee1] p-4 text-center">
-          <AlertTriangle size={48} className="text-red-500 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
-          <p className="mb-4 text-[#949ba4]">The application crashed. Please check the console for details.</p>
-          <pre className="bg-[#1e1f22] p-4 rounded text-left text-xs font-mono overflow-auto max-w-full border border-red-500/20 text-red-400">
-            {this.state.error && this.state.error.toString()}
-          </pre>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-6 bg-[#5865F2] text-white px-6 py-2 rounded hover:bg-[#4752C4] transition-colors"
-          >
-            Reload Application
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-function AppContent() {
+function App() {
   const [myId, setMyId] = useState('');
   const [remoteId, setRemoteId] = useState('');
   const [status, setStatus] = useState('idle');
@@ -55,36 +17,17 @@ function AppContent() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    console.log("App mounted, initializing ChatManager...");
-    try {
-      chatManager.initialize((id) => {
-        console.log("ChatManager initialized with ID:", id);
-        setMyId(id);
-      });
-      chatManager.onStatusChange((s) => {
-        console.log("ChatManager status changed:", s);
-        setStatus(s);
-      });
-      chatManager.onMessage((data) => {
-        console.log("Received message:", data);
-        setMessages((prev) => [...prev, { ...data, isMe: false }]);
-      });
-    } catch (err) {
-      console.error("Failed to initialize ChatManager:", err);
-    }
+    chatManager.initialize((id) => setMyId(id));
+    chatManager.onStatusChange((s) => setStatus(s));
+    chatManager.onMessage((data) => {
+      setMessages((prev) => [...prev, { ...data, isMe: false }]);
+    });
 
     // Load username from local storage if available
-    try {
-      const savedName = localStorage.getItem('discord-lite-username');
-      if (savedName) setUsername(savedName);
-    } catch (e) {
-      console.warn("Could not access localStorage:", e);
-    }
+    const savedName = localStorage.getItem('discord-lite-username');
+    if (savedName) setUsername(savedName);
 
-    return () => {
-      console.log("App unmounting, destroying ChatManager...");
-      chatManager.destroy();
-    };
+    return () => chatManager.destroy();
   }, []);
 
   useEffect(() => {
@@ -94,7 +37,6 @@ function AppContent() {
   const handleConnect = (e) => {
     e.preventDefault();
     if (remoteId) {
-      console.log("Connecting to:", remoteId);
       chatManager.connect(remoteId);
       setIsConnecting(false);
     }
@@ -109,7 +51,6 @@ function AppContent() {
       sender: myId,
       senderName: username // Send the username!
     };
-    console.log("Sending message:", msgData);
     chatManager.sendMessage(msgData);
     setMessages((prev) => [...prev, { ...msgData, isMe: true }]);
     setInputMsg('');
@@ -117,11 +58,7 @@ function AppContent() {
 
   const saveUsername = () => {
     setIsEditingName(false);
-    try {
-      localStorage.setItem('discord-lite-username', username);
-    } catch (e) {
-      console.warn("Could not save to localStorage:", e);
-    }
+    localStorage.setItem('discord-lite-username', username);
   };
 
   // Helper to get a consistent color from an ID string
@@ -267,14 +204,6 @@ function AppContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
   );
 }
 
