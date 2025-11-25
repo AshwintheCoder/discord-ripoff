@@ -10,26 +10,33 @@ export class ChatManager {
   }
 
   initialize(onIdGenerated) {
-    // Use default PeerJS server (public)
-    this.peer = new Peer(null, {
-      debug: 2
-    });
+    console.log("ChatManager: Initializing Peer...");
+    try {
+      // Use default PeerJS server (public)
+      this.peer = new Peer(null, {
+        debug: 2
+      });
 
-    this.peer.on('open', (id) => {
-      this.myId = id;
-      console.log('My Peer ID:', id);
-      if (onIdGenerated) onIdGenerated(id);
-      this.updateStatus('online');
-    });
+      this.peer.on('open', (id) => {
+        this.myId = id;
+        console.log('ChatManager: My Peer ID:', id);
+        if (onIdGenerated) onIdGenerated(id);
+        this.updateStatus('online');
+      });
 
-    this.peer.on('connection', (conn) => {
-      this.handleConnection(conn);
-    });
+      this.peer.on('connection', (conn) => {
+        console.log("ChatManager: Incoming connection");
+        this.handleConnection(conn);
+      });
 
-    this.peer.on('error', (err) => {
-      console.error('Peer error:', err);
+      this.peer.on('error', (err) => {
+        console.error('ChatManager: Peer error:', err);
+        this.updateStatus('error');
+      });
+    } catch (err) {
+      console.error("ChatManager: Failed to create Peer instance:", err);
       this.updateStatus('error');
-    });
+    }
   }
 
   connect(remoteId) {
